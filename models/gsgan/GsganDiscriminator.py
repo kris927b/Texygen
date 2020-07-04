@@ -19,12 +19,12 @@ class Discriminator():
         l2_loss = tf.constant(0.0)
         self.start_token = tf.constant([start_token] * batch_size, dtype=tf.int32)
 
-        with tf.variable_scope('discriminator'):
+        with tf.compat.v1.variable_scope('discriminator'):
             self.g_recurrent_unit = self.create_recurrent_unit(self.d_params)  # maps h_tm1 to h_t for generator
             self.g_output_unit = self.create_output_unit(self.d_params)  # maps h_t to o_t (output token logits)
 
-        self.input_x = tf.placeholder(tf.float32, [batch_size, sequence_length, vocab_size], name='input_x')
-        self.input_y = tf.placeholder(tf.float32, [batch_size, num_classes], name='input_y')
+        self.input_x = tf.compat.v1.placeholder(tf.float32, [batch_size, sequence_length, vocab_size], name='input_x')
+        self.input_y = tf.compat.v1.placeholder(tf.float32, [batch_size, num_classes], name='input_y')
         self.one_hot = tf.constant(np.eye(vocab_size), dtype=tf.float32)
         self.h_0 = tf.constant(value=0, dtype=tf.float32, shape=[batch_size, hidden_unit])
         self.c_0 = tf.constant(value=0, dtype=tf.float32, shape=[batch_size, hidden_unit])
@@ -33,16 +33,16 @@ class Discriminator():
         score = self.predict(input_x=self.input_x)
         self.score = score
 
-        with tf.name_scope('Dloss'):
-            pred_loss = tf.nn.softmax_cross_entropy_with_logits(logits=score, labels=self.input_y)
+        with tf.compat.v1.name_scope('Dloss'):
+            pred_loss = tf.nn.softmax_cross_entropy_with_logits(logits=score, labels=tf.stop_gradient(self.input_y))
             # todo reg loss
             reg_loss = 0
-            self.loss = tf.reduce_mean(pred_loss)
+            self.loss = tf.reduce_mean(input_tensor=pred_loss)
 
-        self.params = [param for param in tf.trainable_variables() if 'discriminator' in param.name]
-        d_optimizer = tf.train.AdamOptimizer(1e-4)
+        self.params = [param for param in tf.compat.v1.trainable_variables() if 'discriminator' in param.name]
+        d_optimizer = tf.compat.v1.train.AdamOptimizer(1e-4)
         self.grad_clip = 5.0
-        self.pretrain_grad, _ = tf.clip_by_global_norm(tf.gradients(self.loss, self.params), self.grad_clip)
+        self.pretrain_grad, _ = tf.clip_by_global_norm(tf.gradients(ys=self.loss, xs=self.params), self.grad_clip)
         self.train_op = d_optimizer.apply_gradients(zip(self.pretrain_grad, self.params))
         return
 
@@ -61,12 +61,12 @@ class Discriminator():
             cond=lambda i, _1, _2, _3: i < self.sequence_length,
             body=_g_recurrence,
             loop_vars=(tf.constant(0, dtype=tf.int32),
-                       tf.nn.embedding_lookup(self.one_hot, self.start_token), self.h0, o_0))
+                       tf.nn.embedding_lookup(params=self.one_hot, ids=self.start_token), self.h0, o_0))
 
         return output
 
     def init_matrix(self, shape):
-        return tf.random_normal(shape, stddev=0.1)
+        return tf.random.normal(shape, stddev=0.1)
 
     def create_recurrent_unit(self, params):
         # Weights and Bias for input and hidden tensor

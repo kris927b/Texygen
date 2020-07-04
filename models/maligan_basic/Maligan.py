@@ -98,7 +98,7 @@ class Maligan(Gan):
     def train_oracle(self):
         self.init_oracle_trainng()
         self.init_metric()
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -198,7 +198,7 @@ class Maligan(Gan):
                 outfile.write(code_to_text(codes=codes, dictionary=dict))
 
         self.init_cfg_metric(grammar=cfg_grammar)
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -301,7 +301,7 @@ class Maligan(Gan):
             with open(self.test_file, 'w') as outfile:
                 outfile.write(code_to_text(codes=codes, dictionary=dict))
 
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100

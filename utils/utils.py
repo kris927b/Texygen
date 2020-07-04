@@ -24,10 +24,11 @@ def generate_samples(sess, trainable_model, batch_size, generated_num, output_fi
 
 
 def init_sess():
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
-    sess.run(tf.global_variables_initializer())
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.compat.v1.Session(config=config)
+    sess.run(tf.compat.v1.global_variables_initializer())
     return sess
 
 

@@ -61,7 +61,7 @@ class TextganMmd(Gan):
                                 start_token=self.start_token)
         self.set_oracle(oracle)
 
-        g_embeddings = tf.Variable(tf.random_normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
+        g_embeddings = tf.Variable(tf.random.normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
         discriminator = Discriminator(sequence_length=self.sequence_length, num_classes=2,
                                       emd_dim=self.emb_dim, filter_sizes=self.filter_size, num_filters=self.num_filters,
                                       g_embeddings=g_embeddings,
@@ -137,7 +137,7 @@ class TextganMmd(Gan):
     def train_oracle(self):
         self.init_oracle_trainng()
         self.init_metric()
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -188,7 +188,7 @@ class TextganMmd(Gan):
         self.set_oracle(oracle)
         self.oracle.generate_oracle()
         self.vocab_size = self.oracle.vocab_size + 1
-        g_embeddings = tf.Variable(tf.random_normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
+        g_embeddings = tf.Variable(tf.random.normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
         discriminator = Discriminator(sequence_length=self.sequence_length, num_classes=2,
                                       emd_dim=self.emb_dim, filter_sizes=self.filter_size, num_filters=self.num_filters,
                                       g_embeddings=g_embeddings,
@@ -234,7 +234,7 @@ class TextganMmd(Gan):
                 outfile.write(code_to_text(codes=codes, dictionary=dict))
 
         self.init_cfg_metric(grammar=cfg_grammar)
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -289,7 +289,7 @@ class TextganMmd(Gan):
             data_loc = 'data/image_coco.txt'
         self.sequence_length, self.vocab_size = text_precess(data_loc)
 
-        g_embeddings = tf.Variable(tf.random_normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
+        g_embeddings = tf.Variable(tf.random.normal(shape=[self.vocab_size, self.emb_dim], stddev=0.1))
         discriminator = Discriminator(sequence_length=self.sequence_length, num_classes=2,
                                       emd_dim=self.emb_dim, filter_sizes=self.filter_size, num_filters=self.num_filters,
                                       g_embeddings=g_embeddings,
@@ -343,7 +343,7 @@ class TextganMmd(Gan):
             codes = list(map(toint_list, text))
             return codes
 
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100

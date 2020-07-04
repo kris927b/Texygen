@@ -55,7 +55,7 @@ class Leakgan(Gan):
         self.vocab_size = 20
         self.emb_dim = 32
         self.hidden_dim = 32
-        flags = tf.app.flags
+        flags = tf.compat.v1.app.flags
         FLAGS = flags.FLAGS
         flags.DEFINE_boolean('restore', False, 'Training or testing a model')
         flags.DEFINE_boolean('resD', False, 'Training or testing a D model')
@@ -106,10 +106,10 @@ class Leakgan(Gan):
         oracle_dataloader = DataLoader(batch_size=self.batch_size, seq_length=self.sequence_length)
         dis_dataloader = DisDataloader(batch_size=self.batch_size, seq_length=self.sequence_length)
 
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         config.gpu_options.allow_growth = True
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
-        self.sess = tf.Session(config=config)
+        self.sess = tf.compat.v1.Session(config=config)
         self.set_data_loader(gen_loader=gen_dataloader, dis_loader=dis_dataloader, oracle_loader=oracle_dataloader)
 
     def init_metric(self):
@@ -156,7 +156,7 @@ class Leakgan(Gan):
     def train_oracle(self):
         self.init_oracle_trainng()
         self.init_metric()
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -291,7 +291,7 @@ class Leakgan(Gan):
                 outfile.write(code_to_text(codes=codes, dictionary=dict))
 
         self.init_cfg_metric(grammar=cfg_grammar)
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
@@ -418,7 +418,7 @@ class Leakgan(Gan):
             with open(self.test_file, 'w') as outfile:
                 outfile.write(code_to_text(codes=codes, dictionary=dict))
 
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100

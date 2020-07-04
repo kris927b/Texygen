@@ -90,7 +90,7 @@ class Pgbleu(Gan):
     def train_oracle(self):
 
         self.init_oracle_trainng()
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
 
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100

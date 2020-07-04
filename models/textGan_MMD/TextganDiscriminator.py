@@ -15,13 +15,13 @@ class Discriminator(object):
         self.embbeding_mat = g_embeddings
 
         # Placeholders for input, output and dropout
-        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-        self.input_x_lable = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
+        self.input_x = tf.compat.v1.placeholder(tf.int32, [None, sequence_length], name="input_x")
+        self.input_x_lable = tf.compat.v1.placeholder(tf.float32, [None, num_classes], name="input_y")
 
-        self.input_y = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-        self.input_y_lable = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
+        self.input_y = tf.compat.v1.placeholder(tf.int32, [None, sequence_length], name="input_x")
+        self.input_y_lable = tf.compat.v1.placeholder(tf.float32, [None, num_classes], name="input_y")
 
-        self.zh = tf.placeholder(tf.float32, [None, emd_dim], name="zh")
+        self.zh = tf.compat.v1.placeholder(tf.float32, [None, emd_dim], name="zh")
 
         self.dropout_keep_prob = dropout_keep_prob
         self.filter_sizes = filter_sizes
@@ -32,11 +32,11 @@ class Discriminator(object):
         # Keeping track of l2 regularization loss (optional)
         l2_loss = tf.constant(0.0)
 
-        with tf.variable_scope('discriminator'):
+        with tf.compat.v1.variable_scope('discriminator'):
             # Embedding layer
-            with tf.device('/cpu:0'), tf.name_scope("embedding"):
+            with tf.device('/cpu:0'), tf.compat.v1.name_scope("embedding"):
                 self.W = tf.Variable(
-                    tf.random_uniform([emd_dim, emd_dim], -1.0, 1.0),
+                    tf.random.uniform([emd_dim, emd_dim], -1.0, 1.0),
                     name="W")
                 # self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x)
                 # self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
@@ -44,28 +44,28 @@ class Discriminator(object):
             self.W_conv = list()
             self.b_conv = list()
             for filter_size, num_filter in zip(filter_sizes, num_filters):
-                with tf.name_scope("conv-maxpool-%s" % filter_size):
+                with tf.compat.v1.name_scope("conv-maxpool-%s" % filter_size):
                     # Convolution Layer
                     filter_shape = [filter_size, emd_dim, 1, num_filter]
-                    W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+                    W = tf.Variable(tf.random.truncated_normal(filter_shape, stddev=0.1), name="W")
                     self.W_conv.append(W)
                     b = tf.Variable(tf.constant(0.1, shape=[num_filter]), name="b")
                     self.b_conv.append(b)
 
             num_filters_total = sum(self.num_filters)
-            with tf.name_scope("output"):
-                self.Wo = tf.Variable(tf.truncated_normal([num_filters_total, self.num_classes], stddev=0.1), name="W")
+            with tf.compat.v1.name_scope("output"):
+                self.Wo = tf.Variable(tf.random.truncated_normal([num_filters_total, self.num_classes], stddev=0.1), name="W")
                 self.bo = tf.Variable(tf.constant(0.1, shape=[self.num_classes]), name="b")
 
             # recon layer
-            with tf.name_scope("recon"):
-                self.Wzh = tf.Variable(tf.truncated_normal([num_filters_total, 1], stddev=0.1), name="Wz")
+            with tf.compat.v1.name_scope("recon"):
+                self.Wzh = tf.Variable(tf.random.truncated_normal([num_filters_total, 1], stddev=0.1), name="Wz")
                 self.bzh = tf.Variable(tf.constant(0.0, shape=[1]), name="bz")
 
             input_xy = tf.concat([self.input_x, self.input_y], axis=0)
             input_label = tf.concat([self.input_x_lable, self.input_y_lable], axis=0)
 
-            input_x = tf.nn.embedding_lookup(self.embbeding_mat, input_xy)  # batch_size x seq_length x g_emb_dim
+            input_x = tf.nn.embedding_lookup(params=self.embbeding_mat, ids=input_xy)  # batch_size x seq_length x g_emb_dim
             scores, ypred_for_auc, predictions = self.predict(input_x=input_x)
 
             def compute_pairwise_distances(x, y):
@@ -85,7 +85,7 @@ class Discriminator(object):
                 if x.get_shape().as_list()[1] != y.get_shape().as_list()[1]:
                     raise ValueError('The number of features should be the same.')
 
-                norm = lambda x: tf.reduce_sum(tf.square(x), 1)
+                norm = lambda x: tf.reduce_sum(input_tensor=tf.square(x), axis=1)
 
                 # By making the `inner' dimensions of the two matrices equal to 1 using
                 # broadcasting then we are essentially substracting every pair of rows
@@ -96,7 +96,7 @@ class Discriminator(object):
                 # num_x_samples x num_features x num_y_samples matrix.
                 # The resulting dist will be of shape num_y_samples x num_x_samples.
                 # and thus we need to transpose it again.
-                return tf.transpose(norm(tf.expand_dims(x, 2) - tf.transpose(y)))
+                return tf.transpose(a=norm(tf.expand_dims(x, 2) - tf.transpose(a=y)))
 
             def gaussian_kernel_matrix(x, y, sigmas=None):
                 r"""Computes a Guassian Radial Basis Kernel between the samples of x and y.
@@ -120,34 +120,34 @@ class Discriminator(object):
 
                 s = tf.matmul(beta, tf.reshape(dist, (1, -1)))
 
-                return tf.reshape(tf.reduce_sum(tf.exp(-s), 0), tf.shape(dist))
+                return tf.reshape(tf.reduce_sum(input_tensor=tf.exp(-s), axis=0), tf.shape(input=dist))
 
             def calc_mmd(x, y):
-                cost = tf.reduce_mean(gaussian_kernel_matrix(x, x))
-                cost += tf.reduce_mean(gaussian_kernel_matrix(y, y))
-                cost -= 2 * tf.reduce_mean(gaussian_kernel_matrix(x, y))
+                cost = tf.reduce_mean(input_tensor=gaussian_kernel_matrix(x, x))
+                cost += tf.reduce_mean(input_tensor=gaussian_kernel_matrix(y, y))
+                cost -= 2 * tf.reduce_mean(input_tensor=gaussian_kernel_matrix(x, y))
 
                 # We do not allow the loss to become negative.
-                cost = tf.where(cost > 0, cost, 0, name='value')
+                cost = tf.compat.v1.where(cost > 0, cost, 0, name='value')
 
                 return cost
 
             # CalculateMean cross-entropy loss
-            with tf.name_scope("loss"):
-                batch_num = tf.shape(scores)[0]
+            with tf.compat.v1.name_scope("loss"):
+                batch_num = tf.shape(input=scores)[0]
                 pos_score = tf.slice(scores, begin=[0, 0], size=[batch_num, 1])
                 pos_label = tf.slice(input_label, begin=[0, 0], size=[batch_num, 1])
-                gan_loss = tf.log(tf.norm(pos_score - pos_label, ord=1))
+                gan_loss = tf.math.log(tf.norm(tensor=pos_score - pos_label, ord=1))
                 x_feature = self.feature(input_x=self.input_x, name='x')
                 y_feature = self.feature(input_x=self.input_y, name='y')
                 mmd_loss = calc_mmd(x_feature, y_feature)
 
                 z_hat = tf.matmul(x_feature, self.Wzh)
-                recon_loss = - tf.square(tf.norm(tf.subtract(z_hat, self.zh), axis=1))
-                self.loss = tf.reduce_mean(gan_loss) + l2_reg_lambda * l2_loss + 0.1 * mmd_loss + 0.1 * recon_loss
+                recon_loss = - tf.square(tf.norm(tensor=tf.subtract(z_hat, self.zh), axis=1))
+                self.loss = tf.reduce_mean(input_tensor=gan_loss) + l2_reg_lambda * l2_loss + 0.1 * mmd_loss + 0.1 * recon_loss
 
-        self.params = [param for param in tf.trainable_variables() if 'discriminator' in param.name]
-        d_optimizer = tf.train.AdamOptimizer(1e-4)
+        self.params = [param for param in tf.compat.v1.trainable_variables() if 'discriminator' in param.name]
+        d_optimizer = tf.compat.v1.train.AdamOptimizer(1e-4)
         grads_and_vars = d_optimizer.compute_gradients(self.loss, self.params, aggregation_method=2)
         self.train_op = d_optimizer.apply_gradients(grads_and_vars)
 
@@ -159,7 +159,7 @@ class Discriminator(object):
     def feature(self, input_x, name = ''):
         if len(input_x.get_shape()) == 2:
             # incase input_x : batch_size x seq_length [tokens]
-            input_x = tf.nn.embedding_lookup(self.embbeding_mat, input_x)
+            input_x = tf.nn.embedding_lookup(params=self.embbeding_mat, ids=input_x)
         # input_x:  batch_size x seq_length x g_emb_dim
         pooled_outputs = []
         index = -1
@@ -167,19 +167,19 @@ class Discriminator(object):
         embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)
         for filter_size, num_filter in zip(self.filter_sizes, self.num_filters):
             index += 1
-            with tf.name_scope("conv-maxpool-%s-midterm" % filter_size):
+            with tf.compat.v1.name_scope("conv-maxpool-%s-midterm" % filter_size):
                 # Convolution Layer
                 conv = tf.nn.conv2d(
-                    embedded_chars_expanded,
-                    self.W_conv[index],
+                    input=embedded_chars_expanded,
+                    filters=self.W_conv[index],
                     strides=[1, 1, 1, 1],
                     padding="VALID",
                     name="conv")
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, self.b_conv[index]), name="relu")
                 # Maxpooling over the outputs
-                pooled = tf.nn.max_pool(
-                    h,
+                pooled = tf.nn.max_pool2d(
+                    input=h,
                     ksize=[1, self.sequence_length - filter_size + 1, 1, 1],
                     strides=[1, 1, 1, 1],
                     padding='VALID',
@@ -198,15 +198,15 @@ class Discriminator(object):
         l2_loss = tf.constant(0.0)
         d_feature = self.feature(input_x)
         # Add dropout
-        with tf.name_scope("dropout"):
-            h_drop = tf.nn.dropout(d_feature, self.dropout_keep_prob)
+        with tf.compat.v1.name_scope("dropout"):
+            h_drop = tf.nn.dropout(d_feature, 1 - (self.dropout_keep_prob))
         num_filters_total = sum(self.num_filters)
         # Final (unnormalized) scores and predictions
-        with tf.name_scope("output"):
+        with tf.compat.v1.name_scope("output"):
             l2_loss += tf.nn.l2_loss(self.Wo)
             l2_loss += tf.nn.l2_loss(self.bo)
-            scores = tf.nn.xw_plus_b(h_drop, self.Wo, self.bo, name="scores")
+            scores = tf.compat.v1.nn.xw_plus_b(h_drop, self.Wo, self.bo, name="scores")
             ypred_for_auc = tf.nn.softmax(scores)
-            predictions = tf.argmax(scores, 1, name="predictions")
+            predictions = tf.argmax(input=scores, axis=1, name="predictions")
 
         return scores, ypred_for_auc, predictions
